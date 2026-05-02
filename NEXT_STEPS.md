@@ -63,7 +63,7 @@ the scorer (it already computes them internally).
 - Update `index.html` to render the breakdown inline under each row and
   link to `ssd-speckit-workshop/specs/submission_schema.json`.
 
-## 5. Anti-cheat — bind submissions to recent telemetry
+## 5. Anti-cheat — bind submissions to recent telemetry ✅
 
 A hand-typed "perfect" answer that never ran the sim still scores 100. To
 raise the floor, require a SHA of a recent telemetry window in the

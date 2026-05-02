@@ -10,6 +10,7 @@ from sim.anomalies import AnomalyInjector
 from sim.clock import Clock
 from sim.encoding import HIDDEN_MESSAGE, MAINT_INTERVAL_S, MAINT_WINDOW_SAMPLES, encode
 from sim.schema import FlightMode, TelemetrySample
+from sim.window import WindowHasher
 
 
 def _interpolate_path(
@@ -60,6 +61,7 @@ async def run_drone(
     battery_pct = 100.0
     capacity_constant = 50.0  # A·s per %
     current_lag_buffer: deque[float] = deque(maxlen=17)
+    hasher = WindowHasher()
 
     for seq in range(total):
         if altitude_profile is not None:
@@ -124,5 +126,6 @@ async def run_drone(
                 await clock.sleep(dt)
                 continue
             sample = out
+        sample["window_sha256"] = hasher.update(sample)
         await queue.put(sample)
         await clock.sleep(dt)

@@ -1,4 +1,4 @@
-from typing import Literal, TypedDict
+from typing import Literal, NotRequired, TypedDict
 
 FlightMode = Literal["AUTO", "MANUAL", "RTL", "LAND", "MAINT"]
 
@@ -24,6 +24,7 @@ class TelemetrySample(TypedDict):
     lat: float
     lon: float
     flight_mode: FlightMode
+    window_sha256: NotRequired[str | None]
 
 
 class Anomaly(TypedDict):
