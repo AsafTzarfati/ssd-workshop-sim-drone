@@ -6,7 +6,7 @@ hybrid scorer in `sdd-workshop-leaderboard/server/score.mjs`, Copilot-backed
 LLM judge verified end-to-end against `claude-sonnet-4.6`). Listed in
 priority order — pick whichever closes the next gap.
 
-## 1. Tune alias dictionaries to drop free LLM calls
+## 1. Tune alias dictionaries to drop free LLM calls ✅
 
 Every label that hits the alias list short-circuits the LLM round-trip and
 becomes deterministic. Run a few representative student submissions through
@@ -20,7 +20,7 @@ common ones into the per-pattern alias arrays.
   the smoke test's "novel-label" cache size should shrink to 1 (only the
   rejected `"a chessboard"` remains).
 
-## 2. Cloudflare Worker judge parity
+## 2. Cloudflare Worker judge parity ✅
 
 The Node server reaches Copilot through the local Python proxy. The Worker
 can't host Python, so the worker path needs a different provider's bearer
@@ -49,7 +49,7 @@ happen.
   `[judge] <patternId> <normalizedLabel> -> YES|NO (llm)`.
 - Mirror in `sdd-workshop-leaderboard/worker/judge.js`.
 
-## 4. Index page — link schema and surface per-pattern breakdowns
+## 4. Index page — link schema and surface per-pattern breakdowns ✅
 
 Right now `index.html` shows only the final score. Students who lose 4
 points can't tell which pattern bled them. Surface per-pattern points from
