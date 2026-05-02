@@ -78,7 +78,7 @@ any window the sim has actually emitted.
 - In `score.mjs`, fail the submission with a clear error when the SHA is
   missing or doesn't match any logged window.
 
-## 6. Commit the work
+## 6. Commit the work ✅
 
 None of the three workshop repos are git-clean. Concrete groupings:
 
