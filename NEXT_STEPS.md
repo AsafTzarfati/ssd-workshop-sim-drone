@@ -38,7 +38,7 @@ token directly.
 - Verify with `wrangler dev` and replay the three fixtures from
   `scripts/fixtures/` against the local worker URL.
 
-## 3. Judge log visibility
+## 3. Judge log visibility ✅
 
 The judge silently grants/denies — only LLM transport errors log. Day-of,
 the operator should be able to tail the server and watch verdicts as they
