@@ -5,7 +5,7 @@ import websockets
 
 from sim.anomalies import AnomalyInjector, fibonacci_schedule
 from sim.clock import Clock
-from sim.drone import run_drone
+from sim.drone import run_merged
 
 
 async def serve(
@@ -13,11 +13,17 @@ async def serve(
     host: str = "localhost",
     port: int = 8765,
     clock: Clock,
-    path: list[tuple[float, float]],
+    scenarios: list,
     seed: int,
+    rate_hz: int = 10,
+    duration_s: float | None = None,
     anomaly_schedule: list | None = None,
-    **drone_kwargs,
 ) -> None:
+    """Serve a merged telemetry stream over WebSocket.
+
+    All connected clients receive the same broadcast. The drone loop only
+    advances while at least one client is connected (the server pauses
+    between scenarios so reconnecting clients pick up from seq=0)."""
     queue: asyncio.Queue = asyncio.Queue()
     clients: set = set()
     has_client = asyncio.Event()
@@ -48,13 +54,20 @@ async def serve(
     async with websockets.serve(handler, host, port):
         bcast_task = asyncio.create_task(broadcast())
         try:
-            rate_hz = drone_kwargs.get("rate_hz", 10)
-            schedule = anomaly_schedule if anomaly_schedule is not None else fibonacci_schedule(rate_hz)
-            injector = AnomalyInjector(
-                schedule, rate_hz=rate_hz, seed=seed ^ 0xA17
+            schedule = (
+                anomaly_schedule
+                if anomaly_schedule is not None
+                else fibonacci_schedule(rate_hz)
             )
-            await run_drone(
-                clock=clock, path=path, queue=queue, seed=seed, injector=injector, **drone_kwargs
+            injector = AnomalyInjector(schedule, rate_hz=rate_hz, seed=seed ^ 0xA17)
+            await run_merged(
+                clock=clock,
+                queue=queue,
+                scenarios=scenarios,
+                seed=seed,
+                rate_hz=rate_hz,
+                duration_s=duration_s,
+                injector=injector,
             )
         finally:
             bcast_task.cancel()

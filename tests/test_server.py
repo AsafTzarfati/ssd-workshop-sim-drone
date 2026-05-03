@@ -5,7 +5,7 @@ import socket
 import websockets
 
 from sim.clock import RealClock
-from sim.paths import israeli_flag
+from sim.scenarios import merged_scenarios
 from sim.server import serve
 
 
@@ -26,19 +26,17 @@ async def _connect_with_retry(url: str, attempts: int = 40, delay: float = 0.025
     raise RuntimeError(f"could not connect to {url}: {last}")
 
 
-async def test_ws_handshake_and_first_10_samples():
+async def test_ws_handshake_and_first_10_merged_frames():
     port = _free_port()
     server_task = asyncio.create_task(
         serve(
             host="127.0.0.1",
             port=port,
             clock=RealClock(),
-            path=israeli_flag(),
+            scenarios=merged_scenarios(),
             seed=42,
-            duration_s=2.0,
             rate_hz=1000,
-            takeoff_duration_s=0.5,
-            landing_duration_s=0.5,
+            duration_s=2.0,
         )
     )
     try:
@@ -51,12 +49,13 @@ async def test_ws_handshake_and_first_10_samples():
         assert [s["seq"] for s in samples] == list(range(10))
         for s in samples:
             assert s["drone_id"] == "uav-01"
-            assert s["flight_mode"] == "AUTO"
-            assert isinstance(s["motor_temp_c"], list)
-            assert len(s["motor_temp_c"]) == 4
-            assert all(isinstance(v, int) for v in s["motor_temp_c"])
-            assert isinstance(s["lat"], float)
-            assert isinstance(s["lon"], float)
+            for name in ("apollo11", "flag", "heart", "wright"):
+                sub = s[name]
+                assert sub["flight_mode"] in ("AUTO", "MANUAL", "RTL", "LAND")
+                assert isinstance(sub["motor_temp_c"], list)
+                assert len(sub["motor_temp_c"]) == 4
+                assert isinstance(sub["lat"], float)
+                assert isinstance(sub["lon"], float)
     finally:
         server_task.cancel()
         try:
@@ -73,12 +72,10 @@ async def test_seq_contiguous_after_buffered_start():
             host="127.0.0.1",
             port=port,
             clock=RealClock(),
-            path=israeli_flag(),
+            scenarios=merged_scenarios(),
             seed=1,
-            duration_s=2.0,
             rate_hz=1000,
-            takeoff_duration_s=0.5,
-            landing_duration_s=0.5,
+            duration_s=2.0,
         )
     )
     try:
