@@ -16,12 +16,17 @@ def main() -> None:
     args = parser.parse_args()
 
     scenarios = merged_scenarios()
-    duration_s = max(sc.duration_s for sc in scenarios)
+    # Sample counts are pinned to the canonical rate (10Hz). One full cycle
+    # = max scenario length × 10 samples (apollo's 1200). At rate=1000 this
+    # cycle takes 1.2s wall-time; at rate=10 it takes 120s.
+    total_samples = max(int(sc.duration_s * 10) for sc in scenarios)
+    duration_s = total_samples / args.rate
 
     print(
         f"sim: merged stream "
         f"(scenarios={[sc.name for sc in scenarios]}, "
-        f"seed={args.seed} rate={args.rate}Hz duration={duration_s}s "
+        f"seed={args.seed} rate={args.rate}Hz "
+        f"samples={total_samples} wall_duration={duration_s:.2f}s "
         f"port={args.port}) — listening",
         file=sys.stderr,
     )

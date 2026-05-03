@@ -129,6 +129,9 @@ class _ScenarioState:
         }
 
 
+_CANONICAL_RATE_HZ = 10  # Scenario sample counts (and altitude_profile arrays + mode_schedules) are baked at this rate.
+
+
 def make_scenario_states(
     scenarios: list, *, rate_hz: int, seed: int
 ) -> list[_ScenarioState]:
@@ -136,19 +139,26 @@ def make_scenario_states(
 
     The order of `scenarios` determines the seed offset (i-th scenario uses
     `seed + i + 1`), so adding a new scenario at the tail won't shift seeds
-    for the existing ones."""
+    for the existing ones.
+
+    Sample counts are pinned to the canonical rate (10Hz) so they always
+    match the baked altitude_profile / mode_schedule arrays. The merged
+    loop's wall-clock advances at the requested rate; the per-scenario
+    cycle wraps every `natural_total` ticks."""
     states: list[_ScenarioState] = []
     for i, sc in enumerate(scenarios):
-        natural_total = int(sc.duration_s * rate_hz)
+        natural_total = int(sc.duration_s * _CANONICAL_RATE_HZ)
+        natural_takeoff = int(sc.takeoff_duration_s * _CANONICAL_RATE_HZ)
+        natural_landing = int(sc.landing_duration_s * _CANONICAL_RATE_HZ)
         states.append(
             _ScenarioState(
                 name=sc.name,
                 path=sc.path,
                 natural_total=natural_total,
-                natural_takeoff=int(sc.takeoff_duration_s * rate_hz),
-                natural_landing=int(sc.landing_duration_s * rate_hz),
+                natural_takeoff=natural_takeoff,
+                natural_landing=natural_landing,
                 cruise_altitude_m=sc.cruise_altitude_m,
-                rate_hz=rate_hz,
+                rate_hz=_CANONICAL_RATE_HZ,
                 seed=seed + i + 1,
                 altitude_profile=sc.altitude_profile,
                 mode_schedule=sc.mode_schedule,
