@@ -1,8 +1,8 @@
 """Generate the canonical expected_shas.json shipped with the leaderboard.
 
-Drives every workshop scenario at the locked default (seed=42, rate=10Hz)
-through `run_drone`, captures every non-None `window_sha256` emitted, and
-writes the deduped sorted union to JSON. Re-run after any change to the
+Drives the merged-stream sim at the locked default (seed=42, rate=10Hz)
+through `run_merged`, captures every non-None `window_sha256` emitted, and
+writes the deduped sorted list to JSON. Re-run after any change to the
 sim that would alter telemetry content.
 
   python scripts/dump_expected_shas.py [--out path]
@@ -21,37 +21,30 @@ import json
 import sys
 from pathlib import Path
 
-from sim.anomalies import AnomalyInjector
+from sim.anomalies import AnomalyInjector, fibonacci_schedule
 from sim.clock import VirtualClock
-from sim.drone import run_drone
-from sim.scenarios import SCENARIOS
+from sim.drone import run_merged
+from sim.scenarios import merged_scenarios
 
 SEED = 42
 RATE_HZ = 10
 
 
-async def _collect_shas_for(scenario_name: str) -> list[str]:
-    sc = SCENARIOS[scenario_name]()
+async def _collect_shas() -> list[str]:
     queue: asyncio.Queue = asyncio.Queue()
     clock = VirtualClock()
     injector = AnomalyInjector(
-        sc.anomaly_schedule_factory(RATE_HZ),
+        fibonacci_schedule(RATE_HZ),
         rate_hz=RATE_HZ,
         seed=SEED ^ 0xA17,
     )
-    await run_drone(
+    await run_merged(
         clock=clock,
-        path=sc.path,
         queue=queue,
+        scenarios=merged_scenarios(),
         seed=SEED,
-        injector=injector,
         rate_hz=RATE_HZ,
-        duration_s=sc.duration_s,
-        takeoff_duration_s=sc.takeoff_duration_s,
-        landing_duration_s=sc.landing_duration_s,
-        cruise_altitude_m=sc.cruise_altitude_m,
-        altitude_profile=sc.altitude_profile,
-        mode_schedule=sc.mode_schedule,
+        injector=injector,
     )
     shas: list[str] = []
     while not queue.empty():
@@ -63,18 +56,11 @@ async def _collect_shas_for(scenario_name: str) -> list[str]:
 
 
 async def _main(out_path: Path) -> None:
-    union: set[str] = set()
-    per_scenario: dict[str, int] = {}
-    for name in sorted(SCENARIOS):
-        shas = await _collect_shas_for(name)
-        per_scenario[name] = len(shas)
-        union.update(shas)
-        print(f"  {name}: {len(shas)} SHAs", file=sys.stderr)
-    sorted_union = sorted(union)
-    out_path.write_text(json.dumps(sorted_union, indent=0) + "\n")
+    shas = await _collect_shas()
+    unique = sorted(set(shas))
+    out_path.write_text(json.dumps(unique, indent=0) + "\n")
     print(
-        f"wrote {len(sorted_union)} unique SHAs to {out_path} "
-        f"(per-scenario: {per_scenario})",
+        f"wrote {len(unique)} unique SHAs (out of {len(shas)} emitted) to {out_path}",
         file=sys.stderr,
     )
 

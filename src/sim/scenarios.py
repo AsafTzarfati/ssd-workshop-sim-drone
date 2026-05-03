@@ -95,6 +95,14 @@ def _wright() -> Scenario:
     )
 
 
+# Order matters for deterministic seeding (drone.make_scenario_states uses
+# index-based seed offsets). Append-only — never reorder existing entries.
+def merged_scenarios() -> list[Scenario]:
+    return [_apollo11(), _flag(), _heart(), _wright()]
+
+
+# Kept for tests that still address scenarios by name (they construct a
+# single-element list and pass it through `run_merged`).
 SCENARIOS: dict[str, Callable[[], Scenario]] = {
     "apollo11": _apollo11,
     "flag": _flag,
